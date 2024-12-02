@@ -10,6 +10,8 @@ __pycache__/
 
 # Configurações do editor (VSCode, IDEs)
 .vscode/
+.vscode
+.vscode/*
 
 # Logs e arquivos temporários
 *.log
