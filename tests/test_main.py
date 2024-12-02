@@ -1,15 +1,8 @@
-import pytest
-from unittest.mock import Mock
-
-import numpy as np
 from fastapi.testclient import TestClient
 from dotenv import load_dotenv
 import os
-import json
 import time
 
-from src.services.face_recognition_service import FaceRecognitionService
-from src.domain.models import DetectionResults, DetectionResult, BoundingBox, VectorSearchResult
 from src.api.main import app
 
 load_dotenv()

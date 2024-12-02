@@ -6,7 +6,6 @@ import time
 
 from src.domain.interfaces import FaceDetector
 from src.domain.models import DetectionResult, DetectionResults, BoundingBox
-from src.utils.timing import timer
 from src.utils.logging import logger
 
 class DeepFaceDetector(FaceDetector):

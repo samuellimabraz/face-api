@@ -1,7 +1,6 @@
 import numpy as np
 from deepface import DeepFace
 from src.domain.interfaces import FaceEmbedder
-from src.utils.timing import timer
 from src.utils.logging import logger
 
 class DeepFaceEmbedder(FaceEmbedder):
