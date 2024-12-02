@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DEEPFACE_DETECTOR_BACKEND=${DEEPFACE_DETECTOR_BACKEND}
+      - DEEPFACE_EMBEDDER_MODEL=${DEEPFACE_EMBEDDER_MODEL}
+    env_file:
+      - .env
