@@ -1,4 +1,12 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Depends
+from fastapi import (
+    FastAPI, 
+    UploadFile, 
+    HTTPException, 
+    Depends,
+    File, 
+    WebSocket,
+    WebSocketDisconnect
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPAuthorizationCredentials
 
@@ -125,6 +133,29 @@ async def recognize_person(
     cleaned_result = remove_face_image(recognize_result)
     return cleaned_result
  
+@app.websocket("/ws/recognize")
+async def websocket_endpoint(
+    websocket: WebSocket, 
+    token: str = Depends(auth_handler.authenticate_websocket)
+):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_json()
+            image = data.get("image")
+            threshold = data.get("threshold", 0.5)
+            organization = data.get("organization")
+            
+            if not image or not organization:
+                await websocket.send_json({"error": "Missing image or organization"})
+                continue
+            
+            recognize_result = asdict(face_service.recognize_person(image, threshold, organization))
+            cleaned_result = remove_face_image(recognize_result)
+            await websocket.send_json(cleaned_result)
+    except WebSocketDisconnect:
+        print("Client disconnected")
+        
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

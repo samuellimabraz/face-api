@@ -1,16 +1,24 @@
-from fastapi import Request, HTTPException
+from fastapi import Request, HTTPException, WebSocket, WebSocketException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import json
+import os
 from src.services.face_recognition_service import FaceRecognitionService
 import redis
 
 class APIKeyAuth(HTTPBearer):
-    def __init__(self, service: FaceRecognitionService, cache_host: str = "localhost", cache_port: int = 6379):
+    def __init__(self, 
+        service: FaceRecognitionService, 
+        cache_host: str = os.getenv("REDIS_HOST", "localhost"), 
+        cache_port: int = 6379
+    ):
         super(APIKeyAuth, self).__init__(auto_error=True)
         self.service = service
         self.cache = redis.Redis(host=cache_host, port=cache_port, decode_responses=True)
-
+    
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials:
+        return await self.authenticate_request(request)
+
+    async def authenticate_request(self, request: Request) -> HTTPAuthorizationCredentials:
         credentials: HTTPAuthorizationCredentials = await super().__call__(request)
 
         if not credentials or not credentials.scheme == "Bearer":
@@ -43,4 +51,29 @@ class APIKeyAuth(HTTPBearer):
         # Store in cache
         self.cache.set(cache_key, "valid", ex=3600)  # Cache for 1 hour
 
-        return credentials
+        return 
+    
+    async def authenticate_websocket(self, websocket: WebSocket) -> str:
+        token = websocket.query_params.get("token")
+        if not token:
+            raise WebSocketException(code=403, detail="Missing authorization token")
+
+        # Extract organization, user, and api_key_name from the token or other means
+        # For simplicity, assume they are passed as query parameters
+        organization = websocket.query_params.get("organization")
+        user = websocket.query_params.get("user")
+        api_key_name = websocket.query_params.get("api_key_name")
+
+        if not organization or not user or not api_key_name:
+            raise WebSocketException(code=400, reason="Missing organization, user, or api_key_name")
+
+        cache_key = f"{organization}:{user}:{api_key_name}:{token}"
+        if self.cache.exists(cache_key):
+            print("Cache hit")
+            return token
+
+        if not self.service.validate_api_key(token, user, api_key_name, organization):
+            raise WebSocketException(code=403, reason="Invalid or expired API key")
+
+        self.cache.set(cache_key, "valid", ex=3600)  # Cache for 1 hour
+        return token
