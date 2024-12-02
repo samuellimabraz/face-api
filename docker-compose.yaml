@@ -5,9 +5,20 @@ services:
     build: .
     ports:
       - "8000:8000"
+    volumes:
+      - .:/app 
     environment:
       - MONGODB_URI=${MONGODB_URI}
       - DEEPFACE_DETECTOR_BACKEND=${DEEPFACE_DETECTOR_BACKEND}
       - DEEPFACE_EMBEDDER_MODEL=${DEEPFACE_EMBEDDER_MODEL}
+      - REDIS_HOST=${REDIS_HOST}
     env_file:
       - .env
+    depends_on:
+      - redis  
+
+  redis:
+    image: redis:7.0-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"  # Exponha a porta 6379 se precisar acessar o Redis externamente
