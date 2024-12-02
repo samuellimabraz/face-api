@@ -9,7 +9,8 @@ WORKDIR /app
 COPY requirements.txt requirements.txt
 
 # Instale as dependências
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --upgrade pip setuptools
+RUN pip install --no-cache-dir --ignore-installed -r requirements.txt
 
 # Copie o restante do código para o container
 COPY . .
