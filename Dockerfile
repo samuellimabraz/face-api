@@ -10,6 +10,8 @@ COPY requirements.txt requirements.txt
 
 # Instale as dependências
 RUN pip install --upgrade pip setuptools
+# Instale o Torch para CPU antes do restante das dependências
+RUN pip install ultralytics --extra-index-url https://download.pytorch.org/whl/cpu
 RUN pip install --no-cache-dir --ignore-installed -r requirements.txt
 
 # Copie o restante do código para o container
