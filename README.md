@@ -1,6 +1,6 @@
 # API de Reconhecimento Facial
 
-Um sistema distribuído e escalável de reconhecimento facial construído com **FastAPI**, **MongoDB Atlas Vector Search**, **Redis** e **DeepFace**.
+Um sistema distribuído e escalável de reconhecimento facial construído com **FastAPI**, **MongoDB Atlas Vector Search**, **Redis** e **DeepFace** e **Docker**.
 
 ## Índice
 
@@ -10,7 +10,8 @@ Um sistema distribuído e escalável de reconhecimento facial construído com **
 - [Funcionalidades](#funcionalidades)  
 - [Rotas da API](#rotas-da-api)  
 - [Instalação](#instalação)  
-- [Uso](#uso)  
+    - [Docker Compose](#docker-compose)  
+    - [Python Manual](#instalação-manual)
 - [Aspectos de Sistemas Distribuídos](#aspectos-de-sistemas-distribuídos)  
 - [Considerações de Desempenho](#considerações-de-desempenho)  
 - [Segurança](#segurança)  
@@ -153,12 +154,16 @@ WebSocket: ws://host/ws/recognize?token={api_key}&organization={org}&user={user}
 }
 ```
 
-## Instalação  
+## Instalação 
 
-### Usando Docker Compose  
+Primeiramente clone o repositório  
+```bash
+git clone https://github.com/samuellimabraz/face-api.git
+```  
 
-1. Clone o repositório  
-2. Crie um arquivo `.env` com as configurações necessárias:  
+### Docker Compose  
+
+1. Crie um arquivo `.env` com as configurações necessárias:  
 ```env
 MONGODB_URI=<seu_uri_mongodb_atlas>
 REDIS_HOST=localhost
@@ -166,10 +171,15 @@ DEEPFACE_DETECTOR_BACKEND=yolov8
 DEEPFACE_EMBEDDER_MODEL=Facenet512
 ```  
 
-3. Execute o sistema com Docker Compose:  
+2. Execute o sistema com Docker Compose:  
 ```bash
 docker-compose up --build
 ```  
+
+- [Dockerfile](./Dockerfile)
+- [docker-compose.yml](./docker-compose.yml)
+
+Atualmente a imagem está configura para rodar em ambiente com CPU somente. Futuramente será adicionado suporte para GPU.
 
 ### Instalação Manual  
 
