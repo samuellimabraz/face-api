@@ -233,3 +233,37 @@ uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 - Processamento assíncrono de requisições  
 - Modelos de Deep Learning eficientes  
 - Arquitetura escalável  
+
+---
+
+### Demo da Interface de Usuário (UI)  
+
+Uma interface de demonstração foi desenvolvida utilizando **Vite**, **React** e **TypeScript**, com o objetivo de explorar todas as funcionalidades da API criada. A UI fornece visualizações em tempo real do processo de detecção e reconhecimento facial, integrando a **Webcam** para capturar e exibir os resultados em tempo real.  
+
+#### Principais Funcionalidades da UI  
+
+- **Detecção Facial em Tempo Real**: Use sua webcam para capturar imagens e visualizar o processo de detecção facial.  
+- **Reconhecimento Facial**: Explore a busca por similaridade e o reconhecimento de rostos cadastrados.  
+- **Interface Intuitiva**: Demonstração simples e interativa das funcionalidades da API.  
+
+#### Como Rodar a UI  
+
+1. Navegue até o diretório da UI:  
+   ```bash
+   cd ui/
+   ```  
+
+2. Instale as dependências:  
+   ```bash
+   npm install
+   ```  
+
+3. Inicie o servidor de desenvolvimento:  
+   ```bash
+   npm run dev -- --port 2000
+   ```  
+
+4. Acesse a interface no navegador:  
+   - Acesse **http://localhost:2000** para visualizar e interagir com a demonstração.  
+
+Essa interface é uma ferramenta útil para validar a integração da API com aplicações reais, destacando seu potencial para uso em sistemas distribuídos de reconhecimento facial.
