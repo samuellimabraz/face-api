@@ -1,22 +1,3 @@
-# Diretórios e arquivos gerados automaticamente
-__pycache__/
-*.pyc
-
-# Ambiente virtual
-.venv/
-
-# Variáveis de ambiente
-.env
-
-# Configurações do editor (VSCode, IDEs)
-.vscode/
-.vscode
-.vscode/*
-
-# Logs e arquivos temporários
-*.log
-*.tmp
-
 # Logs
 logs
 *.log
