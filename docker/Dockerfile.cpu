@@ -6,7 +6,7 @@ FROM borda/docker_python-opencv-ffmpeg:cpu-py3.10-cv4.8.1
 WORKDIR /app
 
 # Copie os arquivos necessários
-COPY requirements.txt requirements.txt
+COPY ./requirements-cpu.txt requirements.txt
 
 # Instale as dependências
 RUN pip install --upgrade pip setuptools

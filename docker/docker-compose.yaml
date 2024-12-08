@@ -1,18 +1,20 @@
 services:
-  app:
-    build: .
+  faceapi-cpu:
+    image: faceapi.cpu:latest
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cpu
+    container_name: faceapi_cpu
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
+      - ../:/app
     environment:
       - MONGODB_URI=${MONGODB_URI}
       - DEEPFACE_DETECTOR_BACKEND=${DEEPFACE_DETECTOR_BACKEND}
       - DEEPFACE_EMBEDDER_MODEL=${DEEPFACE_EMBEDDER_MODEL}
       - REDIS_HOST=${REDIS_HOST}
       - CUDA_VISIBLE_DEVICES=""
-    env_file:
-      - .env
     depends_on:
       - redis
 
