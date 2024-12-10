@@ -8,7 +8,8 @@ python-dotenv==1.0.1
 pytest==8.3.3
 requests==2.32.3
 httpx==0.28.0
-tensorflow-cpu==2.18.0
+ultralytics==8.3.40
+tensorflow==2.18.0
 tf-keras==2.18.0
 deepface==0.0.93
 redis==5.2.0

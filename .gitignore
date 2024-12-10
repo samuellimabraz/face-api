@@ -1,5 +1,9 @@
 # Diretórios e arquivos gerados automaticamente
 __pycache__/
+__pycache__/*
+__pycache__/*.*
+__pycache__*
+__pycache__
 *.pyc
 
 # Ambiente virtual

@@ -1,6 +1,6 @@
 services:
   faceapi-cpu:
-    image: faceapi.cpu:latest
+    image: faceapi:cpu
     build:
       context: ..
       dockerfile: docker/Dockerfile.cpu
@@ -15,6 +15,31 @@ services:
       - DEEPFACE_EMBEDDER_MODEL=${DEEPFACE_EMBEDDER_MODEL}
       - REDIS_HOST=${REDIS_HOST}
       - CUDA_VISIBLE_DEVICES=""
+    depends_on:
+      - redis
+
+  faceapi-gpu:
+    image: faceapi:gpu
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [ gpu ]
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.gpu
+    container_name: faceapi_gpu
+    ports:
+      - "8001:8000"
+    volumes:
+      - ../:/app
+    environment:
+      - MONGODB_URI=${MONGODB_URI}
+      - DEEPFACE_DETECTOR_BACKEND=${DEEPFACE_DETECTOR_BACKEND}
+      - DEEPFACE_EMBEDDER_MODEL=${DEEPFACE_EMBEDDER_MODEL}
+      - REDIS_HOST=${REDIS_HOST}
     depends_on:
       - redis
 

@@ -1,4 +1,10 @@
 .venv
+.venv/
+.vscode/
+node_modules/
+node_modules
+ui/
+ui
 __pycache__/
 *.pyc
 *.pyo
