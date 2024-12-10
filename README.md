@@ -173,7 +173,7 @@ DEEPFACE_EMBEDDER_MODEL=Facenet512
 
 2. Execute o sistema com Docker Compose:  
 ```bash
-docker-compose up --build
+docker compose -p face-api -f .\docker\docker-compose.yaml --env-file .\.env up faceapi-{cpu/gpu} --build
 ```  
 
 - [Dockerfile](./Dockerfile)
@@ -185,7 +185,7 @@ Atualmente a imagem está configura para rodar em ambiente com CPU somente. Futu
 
 1. Instale as dependências do Python:  
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-{cpu/gpu}.txt
 ```  
 
 2. Configure as variáveis de ambiente  
