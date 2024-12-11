@@ -62,15 +62,6 @@ Esta API de reconhecimento facial foi projetada para sistemas distribuídos, ofe
   - Suporte a múltiplos modelos para geração de embeddings faciais  
   - Alta precisão em tarefas de detecção e reconhecimento facial
 
-### Principais Funcionalidades no Contexto Distribuído
-
-- Escalabilidade horizontal via containerização  
-- Processamento assíncrono  
-- Suporte a WebSocket para operações em tempo real  
-- Isolamento multi-tenant  
-- Cache distribuído  
-- Busca por similaridade vetorial  
-
 ## Funcionalidades  
 
 1. **Gerenciamento de Organizações**  
@@ -154,7 +145,7 @@ WebSocket: ws://host/ws/recognize?token={api_key}&organization={org}&user={user}
 }
 ```
 
-## Instalação 
+## **Instalação**
 
 Primeiramente clone o repositório  
 ```bash
@@ -163,7 +154,7 @@ git clone https://github.com/samuellimabraz/face-api.git
 
 ### Docker Compose  
 
-1. Crie um arquivo `.env` com as configurações necessárias:  
+**1.** Crie um arquivo `.env` com as configurações necessárias:  
 ```env
 MONGODB_URI=<seu_uri_mongodb_atlas>
 REDIS_HOST=localhost
@@ -171,30 +162,36 @@ DEEPFACE_DETECTOR_BACKEND=yolov8
 DEEPFACE_EMBEDDER_MODEL=Facenet512
 ```  
 
-2. Execute o sistema com Docker Compose:  
+**2.** Execute o sistema com Docker Compose:  
+
+- Windows
 ```bash
 docker compose -p face-api -f .\docker\docker-compose.yaml --env-file .\.env up faceapi-{cpu/gpu} --build
 ```  
+- Linux
+```bash
+docker compose -p face-api -f docker/docker-compose.yaml --env-file .env up faceapi-{cpu/gpu} --build
+``` 
 
 - [Dockerfile](./Dockerfile)
 - [docker-compose.yml](./docker-compose.yml)
 
 Atualmente a imagem está configura para rodar em ambiente com CPU somente. Futuramente será adicionado suporte para GPU.
 
-### Instalação Manual  
+### **Instalação Manual**  
 
-1. Instale as dependências do Python:  
+**1.** Instale as dependências do Python:  
 ```bash
 pip install -r requirements-{cpu/gpu}.txt
 ```  
 
-2. Configure as variáveis de ambiente  
-3. Execute a aplicação:  
+**2.** Configure as variáveis de ambiente  
+**3.** Execute a aplicação:  
 ```bash
 uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 ```  
 
-## Aspectos de Sistemas Distribuídos  
+## Caracteristicas  
 
 ### Escalabilidade  
 - Escalabilidade horizontal via containerização  
@@ -203,36 +200,19 @@ uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 - Camada de cache com Redis  
 
 ### Desempenho  
-- Busca vetorial com base em ANN para rápida correspondência de similaridade  
-- Design de API assíncrona  
-- Estratégia de cache eficiente  
-- Suporte a WebSocket para processamento em tempo real  
+- Utiliza MongoDB Atlas Vector Search com o algoritmo HNSW 
+- Busca vetorial com base em Approximate Nearest Neighbor (ANN) para rápida correspondência de similaridade  
+- Limiares de similaridade configuráveis  
+- Criação otimizada de índices por organização    
+- Suporte a WebSocket para reconhecimento contínuo  
+- Processamento assíncrono de requisições  
+- Modelos de Deep Learning eficientes  
 
 ### Segurança  
 - Isolamento multi-tenant  
 - Autenticação via chave de API  
 - Separação de dados por organização  
-- Validação de chaves com cache em Redis  
-
-## Considerações de Desempenho  
-
-### Otimização de Busca Vetorial  
-- Utiliza MongoDB Atlas Vector Search com o algoritmo HNSW  
-- Approximate Nearest Neighbor (ANN) para busca eficiente por similaridade  
-- Limiares de similaridade configuráveis  
-- Criação otimizada de índices por organização  
-
-### Estratégia de Cache  
-- Cache de chaves de API no Redis  
-- Redução de carga no banco de dados  
-- Validação de autenticação mais rápida  
-- Expiração configurável do cache  
-
-### Processamento em Tempo Real  
-- Suporte a WebSocket para reconhecimento contínuo  
-- Processamento assíncrono de requisições  
-- Modelos de Deep Learning eficientes  
-- Arquitetura escalável  
+- Validação de chaves com cache em Redis   
 
 ---
 
