@@ -1,5 +1,6 @@
 # Diretórios e arquivos gerados automaticamente
 __pycache__/
+__pycache__/*
 *.pyc
 
 # Ambiente virtual
@@ -13,11 +14,6 @@ __pycache__/
 .vscode
 .vscode/*
 
-# Logs e arquivos temporários
-*.log
-*.tmp
-
-# Logs
 logs
 *.log
 npm-debug.log*
