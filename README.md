@@ -1,26 +1,26 @@
-# API de Reconhecimento Facial
+# Facial Recognition API
 
-Um sistema distribuído e escalável de reconhecimento facial construído com **FastAPI**, **MongoDB Atlas Vector Search**, **Redis** e **DeepFace** e **Docker**.
+A scalable and distributed facial recognition system built with **FastAPI**, **MongoDB Atlas Vector Search**, **Redis**, **DeepFace**, and **Docker**.
 
-## Índice
+## Table of Contents
 
-- [Visão Geral](#visão-geral)  
-- [Arquitetura do Sistema](#arquitetura-do-sistema)  
-- [Tecnologias Utilizadas](#tecnologias-utilizadas)  
-- [Funcionalidades](#funcionalidades)  
-- [Rotas da API](#rotas-da-api)  
-- [Instalação](#instalação)  
+- [Overview](#overview)  
+- [System Architecture](#system-architecture)  
+- [Technologies Used](#technologies-used)  
+- [Features](#features)  
+- [API Routes](#api-routes)  
+- [Installation](#installation)  
     - [Docker Compose](#docker-compose)  
-    - [Python Manual](#instalação-manual)
-- [Aspectos de Sistemas Distribuídos](#aspectos-de-sistemas-distribuídos)  
-- [Considerações de Desempenho](#considerações-de-desempenho)  
-- [Segurança](#segurança)  
+    - [Manual Python](#manual-installation)
+- [Distributed Systems Aspects](#distributed-systems-aspects)  
+- [Performance Considerations](#performance-considerations)  
+- [Security](#security)  
 
-## Visão Geral  
+## Overview  
 
-Esta API de reconhecimento facial foi projetada para sistemas distribuídos, oferecendo alta escalabilidade e buscas eficientes por similaridade de vetores. O sistema suporta uma arquitetura multi-tenant com isolamento por organizações, gerenciamento de chaves de API e reconhecimento facial em tempo real usando modelos avançados de deep learning.    
+This facial recognition API was designed for distributed systems, offering high scalability and efficient vector similarity searches. The system supports a multi-tenant architecture with organization-based isolation, API key management, and real-time facial recognition using advanced deep learning models.    
 
-## Arquitetura do Sistema
+## System Architecture
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
@@ -38,65 +38,65 @@ Esta API de reconhecimento facial foi projetada para sistemas distribuídos, ofe
                         └──────────────┘
 ```
 
-## Tecnologias Utilizadas  
+## Technologies Used  
 
-### Componentes Principais  
+### Main Components  
 
-- **FastAPI**: Framework web assíncrono de alta performance  
-  - Selecionado por suas capacidades assíncronas e excelente desempenho  
-  - Suporte integrado a WebSocket para processamento em tempo real  
-  - Documentação automática da API  
+- **FastAPI**: High-performance asynchronous web framework  
+  - Selected for its asynchronous capabilities and excellent performance  
+  - Built-in WebSocket support for real-time processing  
+  - Automatic API documentation  
 
 - **MongoDB Atlas**:  
-  - Capacidade de busca vetorial usando o algoritmo HNSW  
-  - Banco de dados distribuído para escalabilidade  
-  - Suporte a multi-tenant com bancos de dados separados  
-  - Busca eficiente por similaridade usando ANN (Approximate Nearest Neighbor)  
+  - Vector search capability using the HNSW algorithm  
+  - Distributed database for scalability  
+  - Multi-tenant support with separate databases  
+  - Efficient similarity search using ANN (Approximate Nearest Neighbor)  
 
 - **Redis**:  
-  - Cache rápido para chaves de API  
-  - Reduz a carga no banco de dados  
+  - Fast cache for API keys  
+  - Reduces database load  
 
 - **DeepFace**:  
-  - Detecção facial de última geração  
-  - Suporte a múltiplos modelos para geração de embeddings faciais  
-  - Alta precisão em tarefas de detecção e reconhecimento facial
+  - State-of-the-art facial detection  
+  - Support for multiple models for facial embedding generation  
+  - High precision in facial detection and recognition tasks
 
-### Principais Funcionalidades no Contexto Distribuído
+### Key Features in Distributed Context
 
-- Escalabilidade horizontal via containerização  
-- Processamento assíncrono  
-- Suporte a WebSocket para operações em tempo real  
-- Isolamento multi-tenant  
-- Cache distribuído  
-- Busca por similaridade vetorial  
+- Horizontal scalability via containerization  
+- Asynchronous processing  
+- WebSocket support for real-time operations  
+- Multi-tenant isolation  
+- Distributed cache  
+- Vector similarity search  
 
-## Funcionalidades  
+## Features  
 
-1. **Gerenciamento de Organizações**  
-   - Criação de ambientes isolados para diferentes clientes  
-   - Índices de busca vetorial separados por organização  
-   - Isolamento e segurança dos dados  
+1. **Organization Management**  
+   - Creation of isolated environments for different clients  
+   - Separate vector search indexes by organization  
+   - Data isolation and security  
 
-2. **Gerenciamento de Chaves de API**  
-   - Geração e revogação de chaves de API  
-   - Autenticação por organização  
-   - Validação de chaves com cache em Redis  
+2. **API Key Management**  
+   - API key generation and revocation  
+   - Organization-based authentication  
+   - Key validation with Redis cache  
 
-3. **Registro Facial**  
-   - Suporte a múltiplos formatos de imagem (URL, caminho, base64)  
-   - Detecção facial automática e geração de embeddings  
-   - Armazenamento de vetores no MongoDB Atlas  
+3. **Facial Registration**  
+   - Support for multiple image formats (URL, path, base64)  
+   - Automatic facial detection and embedding generation  
+   - Vector storage in MongoDB Atlas  
 
-4. **Reconhecimento Facial**  
-   - Detecção facial em tempo real  
-   - Busca por similaridade vetorial usando ANN  
-   - Configuração de limite de similaridade  
-   - Suporte a WebSocket para reconhecimento contínuo  
+4. **Facial Recognition**  
+   - Real-time facial detection  
+   - Vector similarity search using ANN  
+   - Configurable similarity threshold  
+   - WebSocket support for continuous recognition  
 
-## Rotas da API  
+## API Routes  
 
-### **Gerenciamento de Organizações**
+### **Organization Management**
 ```http
 POST /orgs
 {
@@ -104,7 +104,7 @@ POST /orgs
 }
 ```
 
-### **Gerenciamento de Chaves de API** 
+### **API Key Management** 
 ```http
 POST /orgs/{organization}/api-key
 {
@@ -121,7 +121,7 @@ DELETE /orgs/{organization}/api-key
 }
 ```
 
-### **Registro Facial** 
+### **Facial Registration** 
 ```http
 POST /register/{organization}
 {
@@ -134,7 +134,7 @@ POST /register/{organization}
 }
 ```
 
-### **Reconhecimento Facial**
+### **Facial Recognition**
 ```http
 POST /recognize/{organization}
 {
@@ -154,24 +154,24 @@ WebSocket: ws://host/ws/recognize?token={api_key}&organization={org}&user={user}
 }
 ```
 
-## Instalação 
+## Installation 
 
-Primeiramente clone o repositório  
+First, clone the repository:  
 ```bash
 git clone https://github.com/samuellimabraz/face-api.git
 ```  
 
 ### Docker Compose  
 
-1. Crie um arquivo `.env` com as configurações necessárias:  
+1. Create a `.env` file with the necessary configurations:  
 ```env
-MONGODB_URI=<seu_uri_mongodb_atlas>
+MONGODB_URI=<your_mongodb_atlas_uri>
 REDIS_HOST=localhost
 DEEPFACE_DETECTOR_BACKEND=yolov8
 DEEPFACE_EMBEDDER_MODEL=Facenet512
 ```  
 
-2. Execute o sistema com Docker Compose:  
+2. Run the system with Docker Compose:  
 ```bash
 docker-compose up --build
 ```  
@@ -179,91 +179,91 @@ docker-compose up --build
 - [Dockerfile](./Dockerfile)
 - [docker-compose.yml](./docker-compose.yml)
 
-Atualmente a imagem está configura para rodar em ambiente com CPU somente. Futuramente será adicionado suporte para GPU.
+Currently, the image is configured to run in a CPU-only environment. GPU support will be added in the future.
 
-### Instalação Manual  
+### Manual Installation  
 
-1. Instale as dependências do Python:  
+1. Install Python dependencies:  
 ```bash
 pip install -r requirements.txt
 ```  
 
-2. Configure as variáveis de ambiente  
-3. Execute a aplicação:  
+2. Configure environment variables  
+3. Run the application:  
 ```bash
 uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 ```  
 
-## Aspectos de Sistemas Distribuídos  
+## Distributed Systems Aspects  
 
-### Escalabilidade  
-- Escalabilidade horizontal via containerização  
-- Design de API sem estado  
-- Banco de dados distribuído com MongoDB Atlas  
-- Camada de cache com Redis  
+### Scalability  
+- Horizontal scalability via containerization  
+- Stateless API design  
+- Distributed database with MongoDB Atlas  
+- Redis cache layer  
 
-### Desempenho  
-- Busca vetorial com base em ANN para rápida correspondência de similaridade  
-- Design de API assíncrona  
-- Estratégia de cache eficiente  
-- Suporte a WebSocket para processamento em tempo real  
+### Performance  
+- Vector search based on ANN for fast similarity matching  
+- Asynchronous API design  
+- Efficient caching strategy  
+- WebSocket support for real-time processing  
 
-### Segurança  
-- Isolamento multi-tenant  
-- Autenticação via chave de API  
-- Separação de dados por organização  
-- Validação de chaves com cache em Redis  
+### Security  
+- Multi-tenant isolation  
+- API key authentication  
+- Organization-based data separation  
+- Key validation with Redis cache  
 
-## Considerações de Desempenho  
+## Performance Considerations  
 
-### Otimização de Busca Vetorial  
-- Utiliza MongoDB Atlas Vector Search com o algoritmo HNSW  
-- Approximate Nearest Neighbor (ANN) para busca eficiente por similaridade  
-- Limiares de similaridade configuráveis  
-- Criação otimizada de índices por organização  
+### Vector Search Optimization  
+- Uses MongoDB Atlas Vector Search with HNSW algorithm  
+- Approximate Nearest Neighbor (ANN) for efficient similarity search  
+- Configurable similarity thresholds  
+- Optimized index creation by organization  
 
-### Estratégia de Cache  
-- Cache de chaves de API no Redis  
-- Redução de carga no banco de dados  
-- Validação de autenticação mais rápida  
-- Expiração configurável do cache  
+### Caching Strategy  
+- API key caching in Redis  
+- Reduction of database load  
+- Faster authentication validation  
+- Configurable cache expiration  
 
-### Processamento em Tempo Real  
-- Suporte a WebSocket para reconhecimento contínuo  
-- Processamento assíncrono de requisições  
-- Modelos de Deep Learning eficientes  
-- Arquitetura escalável  
+### Real-time Processing  
+- WebSocket support for continuous recognition  
+- Asynchronous request processing  
+- Efficient Deep Learning models  
+- Scalable architecture  
 
 ---
 
-### Demo da Interface de Usuário (UI)  
+### User Interface (UI) Demo  
 
-Uma interface de demonstração foi desenvolvida utilizando **Vite**, **React** e **TypeScript**, com o objetivo de explorar todas as funcionalidades da API criada. A UI fornece visualizações em tempo real do processo de detecção e reconhecimento facial, integrando a **Webcam** para capturar e exibir os resultados em tempo real.  
+A demonstration interface was developed using **Vite**, **React**, and **TypeScript**, with the goal of exploring all the functionality of the created API. The UI provides real-time visualizations of the facial detection and recognition process, integrating the **Webcam** to capture and display results in real time.  
 
-#### Principais Funcionalidades da UI  
+#### Main UI Features  
 
-- **Detecção Facial em Tempo Real**: Use sua webcam para capturar imagens e visualizar o processo de detecção facial.  
-- **Reconhecimento Facial**: Explore a busca por similaridade e o reconhecimento de rostos cadastrados.  
-- **Interface Intuitiva**: Demonstração simples e interativa das funcionalidades da API.  
+- **Real-time Facial Detection**: Use your webcam to capture images and visualize the facial detection process.  
+- **Facial Recognition**: Explore similarity search and recognition of registered faces.  
+- **Intuitive Interface**: Simple and interactive demonstration of the API's capabilities.  
 
-#### Como Rodar a UI  
+#### How to Run the UI  
 
-1. Navegue até o diretório da UI:  
+1. Navigate to the UI directory:  
    ```bash
    cd ui/
    ```  
 
-2. Instale as dependências:  
+2. Install dependencies:  
    ```bash
    npm install
    ```  
 
-3. Inicie o servidor de desenvolvimento:  
+3. Start the development server:  
    ```bash
    npm run dev -- --port 2000
    ```  
 
-4. Acesse a interface no navegador:  
-   - Acesse **http://localhost:2000** para visualizar e interagir com a demonstração.  
+4. Access the interface in your browser:  
+   - Go to **http://localhost:2000** to view and interact with the demo.  
 
-Essa interface é uma ferramenta útil para validar a integração da API com aplicações reais, destacando seu potencial para uso em sistemas distribuídos de reconhecimento facial.
+This interface is a useful tool for validating the API's integration with real applications, highlighting its potential for use in distributed facial recognition systems.
