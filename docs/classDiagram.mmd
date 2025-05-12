@@ -1,0 +1,159 @@
+classDiagram
+    class FastAPI {
+        +add_middleware()
+        +post()
+        +delete()
+        +websocket()
+    }
+
+    class FaceRecognitionService {
+        -face_detector: FaceDetector
+        -face_embedder: FaceEmbedder
+        -face_database: FaceDatabase
+        +create_organization(organization: str) bool
+        +generate_api_key(user: str, api_key_name: str, organization: str) APIKey
+        +revoke_api_key(api_key: str, user: str, api_key_name: str, organization: str) bool
+        +validate_api_key(api_key: str, user: str, api_key_name: str, organization: str) bool
+        +register_person(images: List, name: str, organization: str) bool
+        +detect_faces(image: Union[str, np.ndarray]) DetectionResults
+        +recognize_person(image: Union[str, np.ndarray], threshold: float, organization: str) RecognizeResult
+    }
+
+    class FaceDetector {
+        <<Interface>>
+        +detect(image: Union[str, np.ndarray]) DetectionResults
+    }
+
+    class DeepFaceDetector {
+        +detect(image: Union[str, np.ndarray]) DetectionResults
+    }
+
+    class FaceEmbedder {
+        <<Interface>>
+        +generate_embedding(face_image: np.ndarray) np.ndarray
+    }
+
+    class DeepFaceEmbedder {
+        +generate_embedding(face_image: np.ndarray) np.ndarray
+    }
+
+    class FaceDatabase {
+        <<Interface>>
+        +create_organization(organization: str) bool
+        +save_embedding(name: str, organization: str, embedding: np.ndarray) None
+        +vector_search(embedding: np.ndarray, threshold: float, organization: str) VectorSearchResult
+        +generate_api_key(user: str, api_key_name: str, organization: str) APIKey
+        +revoke_api_key(api_key: str, user: str, api_key_name: str, organization: str) bool
+        +validate_api_key(api_key: str, user: str, api_key_name: str, organization: str) bool
+    }
+
+    class MongoDBFaceDatabase {
+        -client: MongoClient
+        +create_organization(organization: str) bool
+        +save_embedding(name: str, organization: str, embedding: np.ndarray) None
+        +vector_search(embedding: np.ndarray, threshold: float, organization: str) VectorSearchResult
+        +generate_api_key(user: str, api_key_name: str, organization: str) APIKey
+        +revoke_api_key(api_key: str, user: str, api_key_name: str, organization: str) bool
+        +validate_api_key(api_key: str, user: str, api_key_name: str, organization: str) bool
+    }
+
+    class APIKeyAuth {
+        -face_service: FaceRecognitionService
+        +__call__(credentials: HTTPAuthorizationCredentials)
+        +authenticate_websocket(websocket: WebSocket, token: str)
+    }
+
+    class BoundingBox {
+        +x: int
+        +y: int
+        +w: int
+        +h: int
+    }
+
+    class DetectionResult {
+        +bounding_box: BoundingBox
+        +confidence: float
+        +face_image: np.ndarray
+    }
+
+    class DetectionResults {
+        +result: List[DetectionResult]
+        +inference_time: float
+    }
+
+    class VectorSearchResult {
+        +name: str
+        +distance: Optional[float]
+    }
+
+    class RecognizeResult {
+        +detections: DetectionResults
+        +searchs: List[VectorSearchResult]
+    }
+
+    class APIKey {
+        +key: str
+        +user: str
+        +api_key_name: str
+        +organization: str
+        +created_at: datetime
+        +last_used: Optional[datetime]
+        +is_active: bool
+    }
+
+    FastAPI --> FaceRecognitionService : uses
+    FaceRecognitionService *-- FaceDetector
+    FaceRecognitionService *-- FaceEmbedder
+    FaceRecognitionService *-- FaceDatabase
+    DeepFaceDetector ..|> FaceDetector : implements
+    DeepFaceEmbedder ..|> FaceEmbedder : implements
+    MongoDBFaceDatabase ..|> FaceDatabase : implements
+    FastAPI --> APIKeyAuth : uses
+    APIKeyAuth *-- FaceRecognitionService
+    FaceRecognitionService --> APIKey : creates/returns
+    FaceRecognitionService --> DetectionResults : creates/returns
+    FaceRecognitionService --> RecognizeResult : creates/returns
+    DetectionResults *-- DetectionResult
+    DetectionResult *-- BoundingBox
+    RecognizeResult *-- DetectionResults
+    RecognizeResult *-- VectorSearchResult
+    FaceDatabase --> VectorSearchResult : returns
+    FaceDatabase --> APIKey : creates/returns
+    MongoDBFaceDatabase --> APIKey
+    MongoDBFaceDatabase --> VectorSearchResult
+
+    namespace models {
+        class BoundingBox
+        class DetectionResult
+        class DetectionResults
+        class VectorSearchResult
+        class RecognizeResult
+        class APIKey
+    }
+
+    namespace interfaces {
+        class FaceDetector
+        class FaceEmbedder
+        class FaceDatabase
+    }
+
+    namespace services {
+        class FaceRecognitionService
+    }
+
+    namespace detect {
+        class DeepFaceDetector
+    }
+
+    namespace embedd {
+        class DeepFaceEmbedder
+    }
+
+    namespace database {
+        class MongoDBFaceDatabase
+    }
+    
+    namespace api {
+        class FastAPI
+        class APIKeyAuth
+    }
