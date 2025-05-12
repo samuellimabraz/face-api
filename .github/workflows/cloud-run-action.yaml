@@ -1,0 +1,57 @@
+name: publish
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Cloud Run Deployment
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Configure Docker
+        run: |
+          gcloud auth configure-docker
+      
+      - name: Build
+        run: |
+          docker build -f docker/Dockerfile.cpu -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/faceapi:latest .
+
+      - name: Push
+        run: |
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/faceapi:latest
+
+      - name: Deploy
+        run: |
+          gcloud run deploy faceapi \
+          --region europe-west1 \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/faceapi \
+          --platform managed \
+          --allow-unauthenticated \
+          --port=8000 \
+          --cpu=2 \
+          --memory=2Gi \
+          --min-instances=0 \
+          --max-instances=1 \
+          --set-env-vars PYTHONPATH=.,DEEPFACE_DETECTOR_BACKEND=ssd,DEEPFACE_EMBEDDER_MODEL=Facenet512,REDIS_HOST=${{ secrets.REDIS_HOST }},REDIS_PORT=${{ secrets.REDIS_PORT }},REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }},MONGODB_URI=${{ secrets.MONGODB_URI }} \
+          --project ${{ secrets.GCP_PROJECT_ID }}
