@@ -8,6 +8,7 @@ __pycache__/*
 
 # Variáveis de ambiente
 .env
+.secrets
 
 # Configurações do editor (VSCode, IDEs)
 .vscode/
