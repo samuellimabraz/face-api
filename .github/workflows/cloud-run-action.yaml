@@ -48,11 +48,10 @@ jobs:
           --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/faceapi \
           --platform managed \
           --allow-unauthenticated \
+          --port=8000 \
           --cpu=2 \
           --memory=2Gi \
           --min-instances=0 \
           --max-instances=1 \
-          --network=default \
-          --subnet=default \
           --set-env-vars PYTHONPATH=.,DEEPFACE_DETECTOR_BACKEND=ssd,DEEPFACE_EMBEDDER_MODEL=Facenet512,REDIS_HOST=${{ secrets.REDIS_HOST }},REDIS_PORT=${{ secrets.REDIS_PORT }},REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }},MONGODB_URI=${{ secrets.MONGODB_URI }} \
           --project ${{ secrets.GCP_PROJECT_ID }}
