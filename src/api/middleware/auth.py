@@ -5,25 +5,37 @@ import os
 from src.services.face_recognition_service import FaceRecognitionService
 import redis
 
+
 class APIKeyAuth(HTTPBearer):
-    def __init__(self, 
-        service: FaceRecognitionService, 
-        cache_host: str = os.getenv("REDIS_HOST", "localhost"), 
-        cache_port: int = 6379
+    def __init__(
+        self,
+        service: FaceRecognitionService,
+        cache_host: str = os.getenv("REDIS_HOST", "localhost"),
+        cache_port: int = os.getenv("REDIS_PORT", 6379),
+        cache_password: str = os.getenv("REDIS_PASSWORD", ""),
     ):
         super(APIKeyAuth, self).__init__(auto_error=True)
         self.service = service
-        self.cache = redis.Redis(host=cache_host, port=cache_port, decode_responses=True)
-    
+        self.cache = redis.Redis(
+            host=cache_host,
+            port=cache_port,
+            password=cache_password,
+            decode_responses=True,
+        )
+
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials:
         return await self.authenticate_request(request)
 
-    async def authenticate_request(self, request: Request) -> HTTPAuthorizationCredentials:
+    async def authenticate_request(
+        self, request: Request
+    ) -> HTTPAuthorizationCredentials:
         credentials: HTTPAuthorizationCredentials = await super().__call__(request)
 
         if not credentials or not credentials.scheme == "Bearer":
-            raise HTTPException(status_code=403, detail="Invalid or missing authorization credentials.")
-        
+            raise HTTPException(
+                status_code=403, detail="Invalid or missing authorization credentials."
+            )
+
         organization = request.path_params.get("organization")
         if not organization:
             raise HTTPException(status_code=400, detail="Organization not specified.")
@@ -37,7 +49,9 @@ class APIKeyAuth(HTTPBearer):
         api_key_name = request_data.get("api_auth", {}).get("api_key_name")
 
         if not user or not api_key_name:
-            raise HTTPException(status_code=400, detail="User or API key name not specified.")
+            raise HTTPException(
+                status_code=400, detail="User or API key name not specified."
+            )
 
         cache_key = f"{organization}:{user}:{api_key_name}:{credentials.credentials}"
         if self.cache.exists(cache_key):
@@ -45,14 +59,16 @@ class APIKeyAuth(HTTPBearer):
             return credentials
 
         # Validate with the service if not in cache
-        if not self.service.validate_api_key(credentials.credentials, user, api_key_name, organization):
+        if not self.service.validate_api_key(
+            credentials.credentials, user, api_key_name, organization
+        ):
             raise HTTPException(status_code=403, detail="Invalid or expired API key.")
 
         # Store in cache
         self.cache.set(cache_key, "valid", ex=3600)  # Cache for 1 hour
 
-        return 
-    
+        return
+
     async def authenticate_websocket(self, websocket: WebSocket) -> str:
         token = websocket.query_params.get("token")
         if not token:
@@ -65,7 +81,9 @@ class APIKeyAuth(HTTPBearer):
         api_key_name = websocket.query_params.get("api_key_name")
 
         if not organization or not user or not api_key_name:
-            raise WebSocketException(code=400, reason="Missing organization, user, or api_key_name")
+            raise WebSocketException(
+                code=400, reason="Missing organization, user, or api_key_name"
+            )
 
         cache_key = f"{organization}:{user}:{api_key_name}:{token}"
         if self.cache.exists(cache_key):
