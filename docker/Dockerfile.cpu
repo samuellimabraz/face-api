@@ -5,7 +5,7 @@ WORKDIR /app
 COPY ./requirements-cpu.txt requirements.txt
 
 RUN pip install --upgrade pip setuptools && \
-    pip install ultralytics --extra-index-url https://download.pytorch.org/whl/cpu && \
+    #pip install ultralytics --extra-index-url https://download.pytorch.org/whl/cpu && \
     pip install --no-cache-dir --ignore-installed -r requirements.txt
 
 COPY ./src/ ./src
