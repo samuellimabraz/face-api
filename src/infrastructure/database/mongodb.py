@@ -409,3 +409,79 @@ class MongoDBFaceDatabase(FaceDatabase):
         except Exception as e:
             logger.error(f"Failed to get organizations: {e}")
             raise RuntimeError(f"Failed to get organizations: {str(e)}")
+
+    def get_people(self, organization: str) -> list:
+        """
+        Get a list of all people registered in an organization.
+
+        Args:
+            organization (str): Organization to get people from
+
+        Returns:
+            list: List of unique person names
+
+        Raises:
+            ValueError: If organization doesn't exist
+            RuntimeError: If getting people fails
+        """
+        try:
+            if not self.database_exists(organization):
+                raise ValueError(f"Database '{organization}' does not exist.")
+
+            db = self._get_organization_db(organization)
+
+            # Get distinct names from the embeddings collection
+            people = db["embeddings"].distinct("name")
+
+            return people
+        except Exception as e:
+            logger.error(
+                f"Failed to get people from organization '{organization}': {e}"
+            )
+            raise RuntimeError(f"Failed to get people: {str(e)}")
+
+    def delete_person(self, name: str, organization: str) -> bool:
+        """
+        Delete all embeddings for a specific person from an organization.
+
+        Args:
+            name (str): Name of the person to delete
+            organization (str): Organization the person belongs to
+
+        Returns:
+            bool: True if deletion was successful, False otherwise
+
+        Raises:
+            ValueError: If organization doesn't exist
+        """
+        try:
+            if not self.database_exists(organization):
+                raise ValueError(f"Database '{organization}' does not exist.")
+
+            db = self._get_organization_db(organization)
+
+            # Delete all embeddings for the specified person
+            result = db["embeddings"].delete_many({"name": name})
+
+            if result.deleted_count > 0:
+                logger.info(
+                    f"Deleted {result.deleted_count} embeddings for '{name}' in organization '{organization}'"
+                )
+                print(
+                    f"Deleted {result.deleted_count} embeddings for '{name}' in organization '{organization}'"
+                )
+                return True
+            else:
+                logger.warning(
+                    f"No embeddings found for '{name}' in organization '{organization}'"
+                )
+                print(
+                    f"No embeddings found for '{name}' in organization '{organization}'"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(
+                f"Failed to delete person '{name}' from organization '{organization}': {e}"
+            )
+            return False

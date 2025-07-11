@@ -211,3 +211,40 @@ class FaceRecognitionService:
         except Exception as e:
             logger.error(f"Failed to get organizations: {e}")
             return []
+
+    def get_people(self, organization: str) -> List[str]:
+        """
+        Get a list of all people registered in an organization.
+
+        Args:
+            organization (str): Organization to get people from
+
+        Returns:
+            List[str]: List of unique person names
+        """
+        try:
+            return self.face_database.get_people(organization)
+        except Exception as e:
+            logger.error(
+                f"Failed to get people from organization '{organization}': {e}"
+            )
+            return []
+
+    def delete_person(self, name: str, organization: str) -> bool:
+        """
+        Delete all embeddings for a specific person from an organization.
+
+        Args:
+            name (str): Name of the person to delete
+            organization (str): Organization the person belongs to
+
+        Returns:
+            bool: True if deletion was successful, False otherwise
+        """
+        try:
+            return self.face_database.delete_person(name, organization)
+        except Exception as e:
+            logger.error(
+                f"Failed to delete person '{name}' from organization '{organization}': {e}"
+            )
+            return False
