@@ -9,13 +9,14 @@ import redis
 class APIKeyAuth(HTTPBearer):
     """
     API Key authentication middleware for FastAPI.
-    
+
     This class extends FastAPI's HTTPBearer to implement custom API key authentication
     with Redis caching for performance. It validates API keys against the face recognition
     service and caches valid keys to reduce database lookups.
-    
+
     The middleware supports both HTTP REST endpoints and WebSocket connections.
     """
+
     def __init__(
         self,
         service: FaceRecognitionService,
@@ -25,7 +26,7 @@ class APIKeyAuth(HTTPBearer):
     ):
         """
         Initialize the API Key authentication middleware.
-        
+
         Args:
             service (FaceRecognitionService): Service instance for API key validation
             cache_host (str, optional): Redis host address. Defaults to environment variable or "localhost".
@@ -44,16 +45,16 @@ class APIKeyAuth(HTTPBearer):
     async def __call__(self, request: Request) -> HTTPAuthorizationCredentials:
         """
         FastAPI dependency injection entry point.
-        
+
         This method is called automatically by FastAPI when the middleware is used
         as a dependency in a route.
-        
+
         Args:
             request (Request): The incoming HTTP request
-            
+
         Returns:
             HTTPAuthorizationCredentials: The validated credentials
-            
+
         Raises:
             HTTPException: If authentication fails
         """
@@ -64,17 +65,17 @@ class APIKeyAuth(HTTPBearer):
     ) -> HTTPAuthorizationCredentials:
         """
         Authenticate an HTTP request using the Bearer token.
-        
+
         The method extracts the API key from the Authorization header, looks up organization,
         user, and API key name from the request, and validates the key. It uses Redis
         to cache valid keys for better performance.
-        
+
         Args:
             request (Request): The incoming HTTP request
-            
+
         Returns:
             HTTPAuthorizationCredentials: The validated credentials
-            
+
         Raises:
             HTTPException: If authentication fails, with appropriate status codes:
                 - 403: For invalid/missing credentials or invalid API key
@@ -91,18 +92,32 @@ class APIKeyAuth(HTTPBearer):
         if not organization:
             raise HTTPException(status_code=400, detail="Organization not specified.")
 
-        request_body = await request.body()
-        if not request_body:
-            raise HTTPException(status_code=400, detail="Missing request body.")
-
-        request_data = json.loads(request_body.decode("utf-8"))
-        user = request_data.get("api_auth", {}).get("user")
-        api_key_name = request_data.get("api_auth", {}).get("api_key_name")
-
-        if not user or not api_key_name:
-            raise HTTPException(
-                status_code=400, detail="User or API key name not specified."
-            )
+        # Support GET requests (no body) by extracting from query params
+        if request.method == "GET":
+            user = request.query_params.get("user")
+            api_key_name = request.query_params.get("api_key_name")
+            if not user or not api_key_name:
+                raise HTTPException(
+                    status_code=400,
+                    detail="User or API key name not specified in query parameters.",
+                )
+        else:
+            request_body = await request.body()
+            if not request_body:
+                raise HTTPException(status_code=400, detail="Missing request body.")
+            try:
+                request_data = json.loads(request_body.decode("utf-8"))
+            except Exception:
+                raise HTTPException(
+                    status_code=400, detail="Invalid JSON in request body."
+                )
+            user = request_data.get("api_auth", {}).get("user")
+            api_key_name = request_data.get("api_auth", {}).get("api_key_name")
+            if not user or not api_key_name:
+                raise HTTPException(
+                    status_code=400,
+                    detail="User or API key name not specified in request body.",
+                )
 
         cache_key = f"{organization}:{user}:{api_key_name}:{credentials.credentials}"
         if self.cache.exists(cache_key):
@@ -123,17 +138,17 @@ class APIKeyAuth(HTTPBearer):
     async def authenticate_websocket(self, websocket: WebSocket) -> str:
         """
         Authenticate a WebSocket connection using query parameters.
-        
+
         This method extracts the API key (token) and required parameters from
         WebSocket query parameters and validates the key. It uses Redis to
         cache valid keys for better performance.
-        
+
         Args:
             websocket (WebSocket): The incoming WebSocket connection
-            
+
         Returns:
             str: The validated API key token
-            
+
         Raises:
             WebSocketException: If authentication fails, with appropriate status codes:
                 - 403: For missing token or invalid API key

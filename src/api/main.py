@@ -81,6 +81,11 @@ class DetectionRequest(BaseModel):
     api_auth: APIKeyRequest
 
 
+class DeletePersonRequest(BaseModel):
+    name: str
+    api_auth: APIKeyRequest
+
+
 ## Config routes
 @app.post("/orgs")
 async def create_organization(
@@ -154,6 +159,32 @@ async def recognize_person(
     )
     cleaned_result = remove_face_image(recognize_result)
     return cleaned_result
+
+
+@app.get("/people/{organization}")
+async def get_people(
+    organization: str,
+    credentials: HTTPAuthorizationCredentials = Depends(auth_handler),
+):
+    """Get a list of all people registered in an organization."""
+    try:
+        people = face_service.get_people(organization)
+        return {"people": people}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/people/{organization}")
+async def delete_person(
+    organization: str,
+    request: DeletePersonRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(auth_handler),
+):
+    """Delete all embeddings for a specific person from an organization."""
+    success = face_service.delete_person(request.name, organization)
+    if not success:
+        raise HTTPException(status_code=404, detail=f"Person '{request.name}' not found or failed to delete")
+    return {"message": f"Person '{request.name}' deleted successfully"}
 
 
 @app.websocket("/ws/recognize")

@@ -1,431 +1,111 @@
-# Facial Recognition API
+# Face API
 
-A scalable and distributed facial recognition system built with **FastAPI**, **MongoDB Atlas Vector Search**, **Redis**, **DeepFace**, and **Docker**.
+Facial recognition API. An image goes through DeepFace for detection and a Facenet512 embedding, then MongoDB Atlas Vector Search returns the closest stored face inside one organization.
 
-## Table of Contents
+![Architecture](images/architecture.png)
 
-- [Overview](#overview)  
-- [System Architecture](#system-architecture)  
-- [Technologies Used](#technologies-used)  
-- [Features](#features)  
-- [API Routes](#api-routes)  
-- [Installation](#installation)  
-    - [Docker Compose](#docker-compose)  
-    - [Manual Python](#manual-installation)
-- [Distributed Systems Aspects](#distributed-systems-aspects)  
-- [Performance Considerations](#performance-considerations)  
-- [Security](#security)  
+## Flow
 
-## Overview  
+Registration (`POST /register/{organization}`):
 
-This facial recognition API was designed for distributed systems, offering high scalability and efficient vector similarity searches. The system supports a multi-tenant architecture with organization-based isolation, API key management, and real-time facial recognition using advanced deep learning models.    
+1. DeepFace detects faces and aligns them. Detections with confidence at or below 0.7 are dropped.
+2. Facenet512 embeds each cropped face. The vector has 512 dimensions.
+3. The vector is stored in that organization's `embeddings` collection.
 
-## System Architecture
+Recognition (`POST /recognize/{organization}` or `ws://host/ws/recognize`):
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Client Apps   │────▶│  FastAPI Server │────▶│  Redis Cache    │
-└─────────────────┘     └────────┬────────┘     └─────────────────┘
-                               │
-                        ┌──────▼───────┐
-                        │  DeepFace    │
-                        │  Processing  │
-                        └──────┬───────┘
-                               │
-                        ┌──────▼───────┐
-                        │MongoDB Atlas │
-                        │Vector Search │
-                        └──────────────┘
-```
+1. The same detector and embedder run on the query image.
+2. Atlas Vector Search compares it with cosine similarity (`exact: false`, 20 candidates, limit 1).
+3. If the Atlas score is below the request threshold, the name is `unknown`. The JSON field for that score is `distance`. The response also includes the bounding box. Cropped face pixels are removed before it is sent.
 
-```mermaid
-classDiagram
-    class FastAPI {
-        +add_middleware()
-        +post()
-        +delete()
-        +websocket()
-    }
+Both calls require a Bearer API key. Redis stores a valid key for one hour. On a cache miss the key is checked with bcrypt against the organization's `api_keys` collection.
 
-    class FaceRecognitionService {
-        -face_detector: FaceDetector
-        -face_embedder: FaceEmbedder
-        -face_database: FaceDatabase
-        +create_organization(organization: str) bool
-        +generate_api_key(user: str, api_key_name: str, organization: str) APIKey
-        +revoke_api_key(api_key: str, user: str, api_key_name: str, organization: str) bool
-        +validate_api_key(api_key: str, user: str, api_key_name: str, organization: str) bool
-        +register_person(images: List, name: str, organization: str) bool
-        +detect_faces(image: Union[str, np.ndarray]) DetectionResults
-        +recognize_person(image: Union[str, np.ndarray], threshold: float, organization: str) RecognizeResult
-    }
+Each organization is its own MongoDB database, with `embeddings` and `api_keys`. Creating an organization also creates the vector index `face_embbedings`.
 
-    class FaceDetector {
-        <<Interface>>
-        +detect(image: Union[str, np.ndarray]) DetectionResults
-    }
+The detector backend and embedder model come from the environment. The code defaults are `yolov8` and `Facenet512`. `.env.example` and the Cloud Run workflow use `ssd` and `Facenet512`.
 
-    class DeepFaceDetector {
-        +detect(image: Union[str, np.ndarray]) DetectionResults
-    }
+## Stack
 
-    class FaceEmbedder {
-        <<Interface>>
-        +generate_embedding(face_image: np.ndarray) np.ndarray
-    }
+- FastAPI and Uvicorn
+- DeepFace for detection and embedding
+- MongoDB Atlas Vector Search
+- Redis for API-key cache
+- React, Vite, and TypeScript demo in `ui/` (webcam over HTTP or WebSocket)
+- CPU Docker image. Compose also starts Redis. A GitHub Action can build that image and deploy it to Cloud Run (`europe-west1`, 2 CPU, 2 GiB, max 1 instance).
 
-    class DeepFaceEmbedder {
-        +generate_embedding(face_image: np.ndarray) np.ndarray
-    }
+## API
 
-    class FaceDatabase {
-        <<Interface>>
-        +create_organization(organization: str) bool
-        +save_embedding(name: str, organization: str, embedding: np.ndarray) None
-        +vector_search(embedding: np.ndarray, threshold: float, organization: str) VectorSearchResult
-        +generate_api_key(user: str, api_key_name: str, organization: str) APIKey
-        +revoke_api_key(api_key: str, user: str, api_key_name: str, organization: str) bool
-        +validate_api_key(api_key: str, user: str, api_key_name: str, organization: str) bool
-    }
+`POST /orgs` and `POST /orgs/{organization}/api-key` are open. The other routes need `Authorization: Bearer <api_key>`, plus `user` and `api_key_name` (in the JSON body as `api_auth`, or as query parameters on GET).
 
-    class MongoDBFaceDatabase {
-        -client: MongoClient
-        +create_organization(organization: str) bool
-        +save_embedding(name: str, organization: str, embedding: np.ndarray) None
-        +vector_search(embedding: np.ndarray, threshold: float, organization: str) VectorSearchResult
-        +generate_api_key(user: str, api_key_name: str, organization: str) APIKey
-        +revoke_api_key(api_key: str, user: str, api_key_name: str, organization: str) bool
-        +validate_api_key(api_key: str, user: str, api_key_name: str, organization: str) bool
-    }
-
-    class APIKeyAuth {
-        -face_service: FaceRecognitionService
-        +__call__(credentials: HTTPAuthorizationCredentials)
-        +authenticate_websocket(websocket: WebSocket, token: str)
-    }
-
-    class BoundingBox {
-        +x: int
-        +y: int
-        +w: int
-        +h: int
-    }
-
-    class DetectionResult {
-        +bounding_box: BoundingBox
-        +confidence: float
-        +face_image: np.ndarray
-    }
-
-    class DetectionResults {
-        +result: List[DetectionResult]
-        +inference_time: float
-    }
-
-    class VectorSearchResult {
-        +name: str
-        +distance: Optional[float]
-    }
-
-    class RecognizeResult {
-        +detections: DetectionResults
-        +searchs: List[VectorSearchResult]
-    }
-
-    class APIKey {
-        +key: str
-        +user: str
-        +api_key_name: str
-        +organization: str
-        +created_at: datetime
-        +last_used: Optional[datetime]
-        +is_active: bool
-    }
-
-    FastAPI --> FaceRecognitionService : uses
-    FaceRecognitionService *-- FaceDetector
-    FaceRecognitionService *-- FaceEmbedder
-    FaceRecognitionService *-- FaceDatabase
-    DeepFaceDetector ..|> FaceDetector : implements
-    DeepFaceEmbedder ..|> FaceEmbedder : implements
-    MongoDBFaceDatabase ..|> FaceDatabase : implements
-    FastAPI --> APIKeyAuth : uses
-    APIKeyAuth *-- FaceRecognitionService
-    FaceRecognitionService --> APIKey : creates/returns
-    FaceRecognitionService --> DetectionResults : creates/returns
-    FaceRecognitionService --> RecognizeResult : creates/returns
-    DetectionResults *-- DetectionResult
-    DetectionResult *-- BoundingBox
-    RecognizeResult *-- DetectionResults
-    RecognizeResult *-- VectorSearchResult
-    FaceDatabase --> VectorSearchResult : returns
-    FaceDatabase --> APIKey : creates/returns
-    MongoDBFaceDatabase --> APIKey
-    MongoDBFaceDatabase --> VectorSearchResult
-
-    namespace models {
-        class BoundingBox
-        class DetectionResult
-        class DetectionResults
-        class VectorSearchResult
-        class RecognizeResult
-        class APIKey
-    }
-
-    namespace interfaces {
-        class FaceDetector
-        class FaceEmbedder
-        class FaceDatabase
-    }
-
-    namespace services {
-        class FaceRecognitionService
-    }
-
-    namespace detect {
-        class DeepFaceDetector
-    }
-
-    namespace embedd {
-        class DeepFaceEmbedder
-    }
-
-    namespace database {
-        class MongoDBFaceDatabase
-    }
-    
-    namespace api {
-        class FastAPI
-        class APIKeyAuth
-    }
-``` 
-
-## Technologies Used  
-
-### Main Components  
-
-- **FastAPI**: High-performance asynchronous web framework  
-  - Selected for its asynchronous capabilities and excellent performance  
-  - Built-in WebSocket support for real-time processing  
-  - Automatic API documentation  
-
-- **MongoDB Atlas**:  
-  - Vector search capability using the HNSW algorithm  
-  - Distributed database for scalability  
-  - Multi-tenant support with separate databases  
-  - Efficient similarity search using ANN (Approximate Nearest Neighbor)  
-
-- **Redis**:  
-  - Fast cache for API keys  
-  - Reduces database load  
-
-- **DeepFace**:  
-  - State-of-the-art facial detection  
-  - Support for multiple models for facial embedding generation  
-  - High precision in facial detection and recognition tasks
-
-### Key Features in Distributed Context
-
-- Horizontal scalability via containerization  
-- Asynchronous processing  
-- WebSocket support for real-time operations  
-- Multi-tenant isolation  
-- Distributed cache  
-- Vector similarity search  
-
-## Features  
-
-1. **Organization Management**  
-   - Creation of isolated environments for different clients  
-   - Separate vector search indexes by organization  
-   - Data isolation and security  
-
-2. **API Key Management**  
-   - API key generation and revocation  
-   - Organization-based authentication  
-   - Key validation with Redis cache  
-
-3. **Facial Registration**  
-   - Support for multiple image formats (URL, path, base64)  
-   - Automatic facial detection and embedding generation  
-   - Vector storage in MongoDB Atlas  
-
-4. **Facial Recognition**  
-   - Real-time facial detection  
-   - Vector similarity search using ANN  
-   - Configurable similarity threshold  
-   - WebSocket support for continuous recognition  
-
-## API Routes  
-
-### **Organization Management**
 ```http
 POST /orgs
-{
-    "organization": "org_name"
-}
-```
+{ "organization": "org_name" }
 
-### **API Key Management** 
-```http
+GET /orgs
+
 POST /orgs/{organization}/api-key
-{
-    "user": "username",
-    "api_key_name": "key_name"
-}
+{ "user": "username", "api_key_name": "key_name" }
 
 DELETE /orgs/{organization}/api-key
-{
-    "api_auth": {
-        "user": "username",
-        "api_key_name": "key_name"
-    }
-}
-```
+{ "api_auth": { "user": "username", "api_key_name": "key_name" } }
 
-### **Facial Registration** 
-```http
 POST /register/{organization}
-{
-    "images": ["path/to/image", "http://url/to/image", "base64_string"],
-    "name": "person_name",
-    "api_auth": {
-        "user": "username",
-        "api_key_name": "key_name"
-    }
-}
-```
+{ "images": ["path", "https://...", "base64..."], "name": "person_name", "api_auth": { "user": "username", "api_key_name": "key_name" } }
 
-### **Facial Recognition**
-```http
 POST /recognize/{organization}
-{
-    "image": "path/to/image",
-    "threshold": 0.5,
-    "api_auth": {
-        "user": "username",
-        "api_key_name": "key_name"
-    }
-}
+{ "image": "path or base64", "threshold": 0.5, "api_auth": { "user": "username", "api_key_name": "key_name" } }
 
-WebSocket: ws://host/ws/recognize?token={api_key}&organization={org}&user={user}&api_key_name={api_key_name}
-{
-    "image": "path/to/image",
-    "threshold": 0.5,
-    "organization": "org_name"
-}
+GET /people/{organization}?user=username&api_key_name=key_name
+
+DELETE /people/{organization}
+{ "name": "person_name", "api_auth": { "user": "username", "api_key_name": "key_name" } }
 ```
 
-## Installation 
+WebSocket: `ws://host/ws/recognize?token={api_key}&organization={org}&user={user}&api_key_name={name}`
 
-First, clone the repository:  
+Each message is `{ "image": "...", "threshold": 0.5, "organization": "org_name" }`.
+
+Swagger is at `/docs` when the server is running.
+
+## Run
+
 ```bash
 git clone https://github.com/samuellimabraz/face-api.git
-```  
+cd face-api
+cp .env.example .env
+```
 
-### Docker Compose  
+Set `MONGODB_URI`. For Compose, `REDIS_HOST` should be `redis`. For a local process talking to the Compose Redis, use `localhost`.
 
-1. Create a `.env` file with the necessary configurations:  
-```env
-MONGODB_URI=<your_mongodb_atlas_uri>
-REDIS_HOST=localhost
-DEEPFACE_DETECTOR_BACKEND=yolov8
-DEEPFACE_EMBEDDER_MODEL=Facenet512
-```  
-
-2. Run the system with Docker Compose:  
 ```bash
-docker-compose up --build
-```  
+docker compose -f docker/docker-compose.yaml up --build
+```
 
-- [Dockerfile](./Dockerfile)
-- [docker-compose.yml](./docker-compose.yml)
+The API listens on port 8000. The image is CPU-only (`docker/Dockerfile.cpu`).
 
-Currently, the image is configured to run in a CPU-only environment. GPU support will be added in the future.
+Without Docker:
 
-### Manual Installation  
-
-1. Install Python dependencies:  
 ```bash
-pip install -r requirements.txt
-```  
+pip install -r requirements-cpu.txt
+PYTHONPATH=. uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+```
 
-2. Configure environment variables  
-3. Run the application:  
+Demo UI (proxies `/api` to `http://127.0.0.1:8000`; the WebSocket client connects to `ws://localhost:8000` directly):
+
 ```bash
-uvicorn src.api.main:app --host 0.0.0.0 --port 8000
-```  
+cd ui
+npm install
+npm run dev
+```
 
-## Distributed Systems Aspects  
+## Layout
 
-### Scalability  
-- Horizontal scalability via containerization  
-- Stateless API design  
-- Distributed database with MongoDB Atlas  
-- Redis cache layer  
-
-### Performance  
-- Vector search based on ANN for fast similarity matching  
-- Asynchronous API design  
-- Efficient caching strategy  
-- WebSocket support for real-time processing  
-
-### Security  
-- Multi-tenant isolation  
-- API key authentication  
-- Organization-based data separation  
-- Key validation with Redis cache  
-
-## Performance Considerations  
-
-### Vector Search Optimization  
-- Uses MongoDB Atlas Vector Search with HNSW algorithm  
-- Approximate Nearest Neighbor (ANN) for efficient similarity search  
-- Configurable similarity thresholds  
-- Optimized index creation by organization  
-
-### Caching Strategy  
-- API key caching in Redis  
-- Reduction of database load  
-- Faster authentication validation  
-- Configurable cache expiration  
-
-### Real-time Processing  
-- WebSocket support for continuous recognition  
-- Asynchronous request processing  
-- Efficient Deep Learning models  
-- Scalable architecture  
-
----
-
-### User Interface (UI) Demo  
-
-A demonstration interface was developed using **Vite**, **React**, and **TypeScript**, with the goal of exploring all the functionality of the created API. The UI provides real-time visualizations of the facial detection and recognition process, integrating the **Webcam** to capture and display results in real time.  
-
-#### Main UI Features  
-
-- **Real-time Facial Detection**: Use your webcam to capture images and visualize the facial detection process.  
-- **Facial Recognition**: Explore similarity search and recognition of registered faces.  
-- **Intuitive Interface**: Simple and interactive demonstration of the API's capabilities.  
-
-#### How to Run the UI  
-
-1. Navigate to the UI directory:  
-   ```bash
-   cd ui/
-   ```  
-
-2. Install dependencies:  
-   ```bash
-   npm install
-   ```  
-
-3. Start the development server:  
-   ```bash
-   npm run dev -- --port 2000
-   ```  
-
-4. Access the interface in your browser:  
-   - Go to **http://localhost:2000** to view and interact with the demo.  
-
-This interface is a useful tool for validating the API's integration with real applications, highlighting its potential for use in distributed facial recognition systems.
+```
+src/api/                  FastAPI routes and API-key auth
+src/services/             detection, embedding, and database calls
+src/domain/               models and interfaces
+src/infrastructure/ml/    DeepFace detector and embedder
+src/infrastructure/database/  MongoDB
+ui/                       React demo
+docker/                   CPU image and Compose
+```
